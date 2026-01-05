@@ -10,7 +10,14 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-dnf5 install -y tmux 
+dnf5 install -y tmux  
+
+dnf5 install -y akmod-nvidia xorg-x11-drv-nvidia xorg-x11-drv-nvidia-cuda
+
+rpm-ostree kargs --append=rd.driver.blacklist=nouveau,nova_core --append=modprobe.blacklist=nouveau,nova_core
+
+akmods --force
+dracut -f --regenerate-all
 
 # Use a COPR Example:
 #
