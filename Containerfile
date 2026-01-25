@@ -3,7 +3,7 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM ghcr.io/ublue-os/bazzite-nvidia:stable
+FROM quay.io/fedora/fedora-kinoite:latest
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
