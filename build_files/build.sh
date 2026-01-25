@@ -17,7 +17,7 @@ dnf5 install -y rpmdevtools akmods
 dnf5 install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
 
-dnf5 install -y akmod-nvidia xorg-x11-drv-nvidia xorg-x11-drv-nvidia-cuda
+dnf5 install -y akmod-nvidia xorg-x11-drv-nvidia xorg-x11-drv-nvidia-cuda --exclude=nvidia-kmod-common
 
 rpm-ostree kargs --append=rd.driver.blacklist=nouveau,nova_core --append=modprobe.blacklist=nouveau,nova_core
 
