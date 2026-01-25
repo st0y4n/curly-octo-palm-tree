@@ -21,7 +21,9 @@ dnf5 install -y akmod-nvidia xorg-x11-drv-nvidia xorg-x11-drv-nvidia-cuda --excl
 
 rpm-ostree kargs --append=rd.driver.blacklist=nouveau,nova_core --append=modprobe.blacklist=nouveau,nova_core
 
-akmods --force
+
+akmods --force --kernels $(rpm -q kernel --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}\n' | head -n 1)
+
 dracut -f --regenerate-all
 
 # Use a COPR Example:
