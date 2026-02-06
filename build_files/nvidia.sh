@@ -1,41 +1,43 @@
 #!/bin/bash
-
-# FAILS FASE: exit on error, undefined vars, or pipe failures
 set -ouex pipefail
 
-echo ">>> STARTING INDEPENDENT NVIDIA SETUP <<<"
+echo ">>> STARTING NVIDIA SETUP <<<"
 
-# 1. Install RPM Fusion Repos
-# We use standard DNF here.
+# 1. Install Repos
 dnf install -y \
     https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
-# 2. Capture the Kernel Version (Robustly)
-# We pick the latest installed kernel-core version to match headers against.
-KERNEL_VERSION=$(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -V | tail -n 1)
-echo ">>> Locking driver tools to Kernel: $KERNEL_VERSION"
+# 2. ROBUST KERNEL VERSION CHECK (The fix)
+# We don't use 'rpm -q' because it might list multiple kernels.
+# We look at exactly which kernel modules are present on the disk.
+# This guarantees we install the headers for the kernel we are actually building against.
+KERNEL_VERSION=$(ls /usr/lib/modules | sort -V | tail -n 1)
+echo ">>> Detected Kernel: ${KERNEL_VERSION}"
 
-# 3. Install Build Tools & Headers
-# Note: We MUST keep gcc/make installed so the driver can build itself on the first boot.
+# 3. Install Build Dependencies
+# We include 'gcc' and 'make' so the driver can compile on first boot.
 dnf install -y \
     akmods \
     gcc \
     make \
-    "kernel-devel-$KERNEL_VERSION" \
+    "kernel-devel-${KERNEL_VERSION}" \
     kernel-headers \
     nvidia-kmod-common
 
-# 4. Install the Driver (The "Nuclear" Option)
-# --setopt=tsflags=noscripts prevents the 'Not to be used as root' crash.
-echo ">>> Installing Akmod Nvidia (Scripts Disabled)..."
-dnf install -y --setopt=tsflags=noscripts \
-    akmod-nvidia \
-    xorg-x11-drv-nvidia-cuda
+# 4. Install the Driver (The "Nuclear" Fix)
+# We install akmod-nvidia separately with --setopt=tsflags=noscripts.
+# This prevents the '%post' script from running and failing the build.
+echo ">>> Installing Akmod Nvidia (No Scripts)..."
+dnf install -y --setopt=tsflags=noscripts akmod-nvidia
 
-# 5. Configure Kernel Arguments (Bootc Style)
-# We write a config file to /usr/lib/bootc/kargs.d/ to blacklist nouveau.
-echo ">>> Setting Kernel Arguments..."
+# 5. Install the Rest of the Stack
+# Now that akmod-nvidia is safe, we install the CUDA drivers.
+echo ">>> Installing CUDA Drivers..."
+dnf install -y xorg-x11-drv-nvidia-cuda
+
+# 6. Configure Kernel Arguments (Bootc Style)
+# This hides the Nouveau driver so Nvidia can load.
 mkdir -p /usr/lib/bootc/kargs.d
 cat <<EOF > /usr/lib/bootc/kargs.d/10-nvidia.toml
 rd.driver.blacklist=nouveau
@@ -43,11 +45,11 @@ modprobe.blacklist=nouveau
 nvidia-drm.modeset=1
 EOF
 
-# 6. Enable the Service
-# This service runs on boot to compile the driver.
+# 7. Enable the Build Service
+# This ensures the driver compiles itself on the first boot.
 systemctl enable akmods
 
-# 7. Cleanup DNF Metadata
+# 8. Cleanup
 dnf clean all
 
 echo ">>> NVIDIA SETUP COMPLETE <<<"
