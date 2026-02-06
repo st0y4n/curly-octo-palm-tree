@@ -41,27 +41,41 @@ RUN dnf install -y \
     https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
 
+# ---------------------------------------------------------------------------
+# STEP 1: Install Build Tools ONLY
+# Do NOT install any nvidia packages here, or DNF will pull the driver too early.
+# ---------------------------------------------------------------------------
 RUN KERNEL_VERSION=$(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
     dnf install -y \
     akmods \
-    xorg-x11-drv-nvidia-cuda \
+    gcc \
+    make \
     "kernel-devel-$KERNEL_VERSION" \
     kernel-headers \
     && dnf clean all
 
+# ---------------------------------------------------------------------------
+# STEP 2: The "Fake Binary" Hack + Install Drivers
+# ---------------------------------------------------------------------------
 RUN mv /usr/sbin/akmods /usr/sbin/akmods.real && \
     echo '#!/bin/sh' > /usr/sbin/akmods && \
     echo 'exit 0' >> /usr/sbin/akmods && \
     chmod +x /usr/sbin/akmods && \
     \
-    # 3. Now install the driver
-    #    The scriptlet will run our dummy 'akmods', return success, and finish installing.
-    dnf install -y akmod-nvidia && \
+    # NOW install the actual Nvidia packages. 
+    # The scriptlet will fire, hit our fake 'exit 0' script, and succeed.
+    dnf install -y \
+        akmod-nvidia \
+        xorg-x11-drv-nvidia-cuda \
+    && \
     \
-    # 4. Cleanup: Restore the REAL binary so it works on boot
+    # Restore the real tool so it works on boot
     mv /usr/sbin/akmods.real /usr/sbin/akmods && \
     dnf clean all
 
+# ---------------------------------------------------------------------------
+# STEP 3: Enable the service
+# ---------------------------------------------------------------------------
 RUN systemctl enable akmods
 
 RUN bootc container lint
