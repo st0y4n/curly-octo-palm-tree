@@ -49,6 +49,19 @@ RUN KERNEL_VERSION=$(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{A
     "kernel-headers" \
     && dnf clean all
 
+RUN mv /usr/sbin/akmods /usr/sbin/akmods.real && \
+    echo '#!/bin/sh' > /usr/sbin/akmods && \
+    echo 'exit 0' >> /usr/sbin/akmods && \
+    chmod +x /usr/sbin/akmods && \
+    \
+    # 3. Now install the driver
+    #    The scriptlet will run our dummy 'akmods', return success, and finish installing.
+    dnf install -y akmod-nvidia && \
+    \
+    # 4. Cleanup: Restore the REAL binary so it works on boot
+    mv /usr/sbin/akmods.real /usr/sbin/akmods && \
+    dnf clean all
+
 RUN systemctl enable akmods
 
 RUN bootc container lint
