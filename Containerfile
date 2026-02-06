@@ -43,10 +43,10 @@ RUN dnf install -y \
 
 RUN KERNEL_VERSION=$(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{ARCH}') && \
     dnf install -y \
-    akmod-nvidia \
+    akmods \
     xorg-x11-drv-nvidia-cuda \
     "kernel-devel-$KERNEL_VERSION" \
-    "kernel-headers" \
+    kernel-headers \
     && dnf clean all
 
 RUN mv /usr/sbin/akmods /usr/sbin/akmods.real && \
