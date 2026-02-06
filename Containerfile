@@ -46,7 +46,7 @@ RUN KERNEL_VERSION=$(rpm -q kernel-core --queryformat '%{VERSION}-%{RELEASE}.%{A
     akmod-nvidia \
     xorg-x11-drv-nvidia-cuda \
     "kernel-devel-$KERNEL_VERSION" \
-    "kernel-headers-$KERNEL_VERSION" \
+    "kernel-headers" \
     && dnf clean all
 
 RUN systemctl enable akmods
