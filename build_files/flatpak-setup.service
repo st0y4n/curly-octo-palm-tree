@@ -1,0 +1,26 @@
+[Unit]
+Description=First Boot: Setup Flathub and Install Firefox
+# Only run if we haven't done this before
+ConditionPathExists=!/var/lib/flatpak/firstboot-done
+# Wait for internet
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# 1. Add the Flathub Repository (Using the URL directly is easier for you)
+ExecStart=/usr/bin/flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+# 2. Disable Fedora's default flatpak repos (Optional, but cleaner)
+ExecStart=/usr/bin/flatpak remote-modify --system --disable fedora
+
+# 3. INSTALL FIREFOX (This is the line you need!)
+ExecStart=/usr/bin/flatpak install -y --system flathub org.mozilla.firefox
+
+# 4. Mark as done so it never runs again
+ExecStartPost=/usr/bin/touch /var/lib/flatpak/firstboot-done
+
+[Install]
+WantedBy=multi-user.target

@@ -35,7 +35,9 @@ RUN --mount=type=bind,from=ctx,source=/,target=/ctx \
     --mount=type=cache,dst=/var/log \
     --mount=type=tmpfs,dst=/tmp \
     /ctx/build.sh
-    
 
+COPY build_files/flatpak-setup.service /usr/lib/systemd/system/flatpak-setup.service
+    
+RUN systemctl enable flatpak-setup.service
 RUN bootc container lint
 
